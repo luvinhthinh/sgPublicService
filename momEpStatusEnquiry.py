@@ -1,13 +1,30 @@
 import requests
 from datetime import datetime
 from bs4 import BeautifulSoup
+import smtplib
 
 fin = ''
 fullname = 'LU VINH THINH'
 passportNo = ''
 applicationNo = ''
 
-currentDate = datetime.now().strftime('%d/%m/%Y %h:%m')
+email = 'luvinhthinh.mono@gmail.com'
+pw = ''
+
+def sendEmail(src, des, msg):
+    server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+    server.login(src, pw)
+    body = '\r\n'.join(['To: %s' % des,
+                    'From: %s' % src,
+                    'Subject: MOM EP Status',
+                    '', msg]);
+    try :
+        server.sendmail(src, des, body)
+        print('email sent')
+    except Exception as ex:
+        print('error sending email')
+        print(ex)
+    server.quit()
 
 def sendRequest():
     url = 'https://eponline.mom.gov.sg/epol/PEPOLENQM008SubmitAction.do'
@@ -31,5 +48,7 @@ def parseData(htmlText):
 def cleanText(text):
     return text.strip().replace(u'\xa0', u'')
 
-data = sendRequest()
-print(parseData(data))
+raw_data = sendRequest()
+data = str(parseData(raw_data))
+#print(data)
+sendEmail(email, email, data)
