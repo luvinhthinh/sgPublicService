@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 import smtplib
 import schedule
 import time
+import json
 
 fin = ''
 fullname = 'LU VINH THINH'
@@ -12,6 +13,7 @@ applicationNo = ''
 
 email = 'luvinhthinh.mono@gmail.com'
 pw = ''
+restdb_apiKey = ''
 
 def sendEmail(src, des, msg, title):
     server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
@@ -44,22 +46,36 @@ def parseData(htmlText):
         tds = row.find_all('td')
         data[cleanText(tds[1].get_text())] = cleanText(tds[2].get_text())
 
-    data['datetime'] = datetime.now().strftime('%d/%m/%Y %H:%M')
+    data['datetime'] = datetime.now()
     return data
 
 def cleanText(text):
-    return text.strip().replace(u'\xa0', u'')
+    return text.strip().replace(u'\xa0', u'').replace(':', '')
 
 def checkStatus():
     raw_data = sendRequest()
     parsed_data = parseData(raw_data)
     status = parsed_data['Status']
     data = str(parsed_data)
-    #print(data)
+    #print(parsed_data['datetime'])
+    storeStatus(parsed_data['Application No.'], status, parsed_data['datetime'])
     sendEmail(email, email, data, status)
 
-schedule.every(1).minutes.do(checkStatus)
+def storeStatus(appNo, status, datetime):
+    url = "https://momepstatus-96a7.restdb.io/rest/status"
+    print(datetime)
+    payload = json.dumps( {"app_no": appNo,"status": status, "datetime": str(datetime)} )
+    headers = {
+        'content-type': "application/json",
+        'x-apikey': restdb_apiKey,
+        'cache-control': "no-cache"
+    }
 
-while True:
-    schedule.run_pending()
-    time.sleep(1)
+    response = requests.request("POST", url, data=payload, headers=headers)
+    print(response.text)
+
+checkStatus()
+#schedule.every(1).minutes.do(checkStatus)
+#while True:
+#    schedule.run_pending()
+#    time.sleep(1)
