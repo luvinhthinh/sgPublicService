@@ -2,6 +2,8 @@ import requests
 from datetime import datetime
 from bs4 import BeautifulSoup
 import smtplib
+import schedule
+import time
 
 fin = ''
 fullname = 'LU VINH THINH'
@@ -11,12 +13,12 @@ applicationNo = ''
 email = 'luvinhthinh.mono@gmail.com'
 pw = ''
 
-def sendEmail(src, des, msg):
+def sendEmail(src, des, msg, title):
     server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
     server.login(src, pw)
     body = '\r\n'.join(['To: %s' % des,
                     'From: %s' % src,
-                    'Subject: MOM EP Status',
+                    'Subject: MOM EP Status - ' + title,
                     '', msg]);
     try :
         server.sendmail(src, des, body)
@@ -48,7 +50,16 @@ def parseData(htmlText):
 def cleanText(text):
     return text.strip().replace(u'\xa0', u'')
 
-raw_data = sendRequest()
-data = str(parseData(raw_data))
-#print(data)
-sendEmail(email, email, data)
+def checkStatus():
+    raw_data = sendRequest()
+    parsed_data = parseData(raw_data)
+    status = parsed_data['Status']
+    data = str(parsed_data)
+    #print(data)
+    sendEmail(email, email, data, status)
+
+schedule.every(1).minutes.do(checkStatus)
+
+while True:
+    schedule.run_pending()
+    time.sleep(1)
